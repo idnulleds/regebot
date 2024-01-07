@@ -1,4 +1,4 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const express = require('express');
 const qrcode = require('qrcode');
 const socketIO = require('socket.io');
@@ -72,7 +72,7 @@ io.on('connection', (socket) => {
 });
 
 // TODO: send message routing
-app.post('/send', (req, res) => {
+app.post('/send-message', (req, res) => {
     const phone = req.body.phone;
     const message = req.body.message;
 
@@ -88,7 +88,66 @@ app.post('/send', (req, res) => {
             io.emit('message', `${now} Send alert ${message} to ${phone}`);
         })
         .catch(error => {
+            res.status(404).json({
+                error: true,
+                data: {
+                    message: 'Error send message',
+                    meta: error,
+                },
+            });
+            io.emit('message', `${now} Error sending message to ${phone} with error ${error}`);
+        });
+});
+
+// TODO: send message with attacment from local file
+app.post('/send-attacment', (req, res) => {
+    const phone = req.body.phone;
+    const message = req.body.message;
+    const doc = MessageMedia.fromFilePath('./document/CV and Portofolio_Romi Julianto_Data Analyst.pdf');
+    console.log(doc)
+    client.sendMessage(phone, doc, { caption: message })
+        .then(response => {
             res.status(200).json({
+                error: false,
+                data: {
+                    message: 'Sending message and attactment',
+                    meta: response,
+                },
+            });
+            io.emit('message', `${now} Send alert ${message} to ${phone}`);
+        })
+        .catch(error => {
+            res.status(404).json({
+                error: true,
+                data: {
+                    message: 'Error send message',
+                    meta: error,
+                },
+            });
+            io.emit('message', `${now} Error sending message to ${phone} with error ${error}`);
+        });
+});
+
+app.post('/send-attacment-url', async (req, res) => {
+    const phone = req.body.phone;
+    const message = req.body.message;
+    const url = req.body.url;
+    const doc = await MessageMedia.fromUrl(url);
+    console.log(doc)
+
+    client.sendMessage(phone, doc, { caption: message })
+        .then(response => {
+            res.status(200).json({
+                error: false,
+                data: {
+                    message: 'Sending message and attactment',
+                    meta: response,
+                },
+            });
+            io.emit('message', `${now} Send alert ${message} to ${phone}`);
+        })
+        .catch(error => {
+            res.status(404).json({
                 error: true,
                 data: {
                     message: 'Error send message',
